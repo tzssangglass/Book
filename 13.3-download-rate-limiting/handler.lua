@@ -1,18 +1,30 @@
---µ±Ç°Êı¾İ°æ±¾
+--å½“å‰æ•°æ®ç‰ˆæœ¬
 local data_version = 0
---ÓÃ»§ÏÂÔØËÙ¶ÈµÄÊı¾İ»º´æ´Êµä
+--ç”¨æˆ·ä¸‹è½½é€Ÿåº¦çš„æ•°æ®ç¼“å­˜è¯å…¸
 local user_limit_data_dict = {}
 local plugin = require("kong.plugins.base_plugin"):extend()
 
 function plugin:new()
     plugin.super.new(self, "download-rate-limiting")
 end
---ÒÔ¡°:¡±ºÅ£¬½«Êı¾İ½øĞĞ²ğ·Ö£¬·µ»Økey/value
+--ä»¥â€œ:â€å·ï¼Œå°†æ•°æ®è¿›è¡Œæ‹†åˆ†ï¼Œè¿”å›key/value
 local function iter(config_array)
-    --Í¬ÉÏ
-    ¡­¡­
+    return function(config_array, i, previous_name, previous_value)
+        i = i + 1
+        local current_pair = config_array[i]
+        if current_pair == nil then
+            return nil
+        end
+        
+        local current_name, current_value = current_pair:match("^([^:]+):*(.-)$")
+        if current_value == "" then
+            current_value = nil
+        end
+        
+        return i, current_name, current_value
+    end, config_array, 0
 end
---³õÊ¹»¯Êı¾İ
+--åˆä½¿åŒ–æ•°æ®
 local function init_data(config_array)
     for _, name, value in iter(config_array) do
         user_limit_data_dict[name] = value
@@ -21,25 +33,25 @@ end
 
 function plugin:access(conf)
     plugin.super.access(self)
-    --ÅĞ¶Ï²å¼şÊı¾İ°æ±¾ÊÇ·ñ·¢Éú±ä»¯£¬Èç±ä»¯ĞèÒªÖØĞÂ³õÊ¹»¯
+    --åˆ¤æ–­æ’ä»¶æ•°æ®ç‰ˆæœ¬æ˜¯å¦å‘ç”Ÿå˜åŒ–ï¼Œå¦‚å˜åŒ–éœ€è¦é‡æ–°åˆä½¿åŒ–
     if(conf.data_version > data_version) then
         user_limit_data_dict = {}
         init_data(conf.user_limit_values)
         data_version = conf.data_version
     end
-    --¶ÁÈ¡Ö¸¶¨µÄheaderÃû³ÆÊı¾İ£¬´ÓÖĞÈ¡³öuser id
+    --è¯»å–æŒ‡å®šçš„headeråç§°æ•°æ®ï¼Œä»ä¸­å–å‡ºuser id
     local user_id = kong.request.get_header(conf.user_id_header_name)
-    --ÅĞ¶ÏÊÇ·ñÈ¡³öuser idÇÒÊÇ·ñ´æÔÚÓÚÅäÖÃÖĞ
+    --åˆ¤æ–­æ˜¯å¦å–å‡ºuser idä¸”æ˜¯å¦å­˜åœ¨äºé…ç½®ä¸­
     if user_id and user_limit_data_dict[user_id] then
-        --´æÔÚÓÚÅäÖÃÖĞ£¬¸ù¾İÅäÖÃÏŞÖÆÏÂÔØËÙ¶È
+        --å­˜åœ¨äºé…ç½®ä¸­ï¼Œæ ¹æ®é…ç½®é™åˆ¶ä¸‹è½½é€Ÿåº¦
         ngx.var.limit_rate = user_limit_data_dict[user_id]
     else
-        --²»´æÔÚÓÚÅäÖÃÖĞ£¬Ê¹ÓÃÄ¬ÈÏÅäÖÃÖµÏŞÖÆÏÂÔØËÙ¶È
+        --ä¸å­˜åœ¨äºé…ç½®ä¸­ï¼Œä½¿ç”¨é»˜è®¤é…ç½®å€¼é™åˆ¶ä¸‹è½½é€Ÿåº¦
         ngx.var.limit_rate = conf.default_rate_limiting
     end
     
 end
---²å¼şÓÅÏÈ¼¶
+--æ’ä»¶ä¼˜å…ˆçº§
 plugin.PRIORITY = 10
 
 return plugin
