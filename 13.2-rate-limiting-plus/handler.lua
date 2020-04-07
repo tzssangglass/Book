@@ -10,25 +10,25 @@ local sort = table.sort
 local ngx_log = ngx.log
 local pairs = pairs
 local cache
---ËùÊ¹ÓÃµÄËÙÂÊÏŞÖÆID
+--æ‰€ä½¿ç”¨çš„é€Ÿç‡é™åˆ¶ID
 local RATELIMIT_ID = "X-RateLimit-Id"
---ÊÇ´ò¿ªËÙÂÊÈÕÖ¾µ÷ÊÔ
+--æ˜¯æ‰“å¼€é€Ÿç‡æ—¥å¿—è°ƒè¯•
 local RATELIMIT_DEBUG = "X-RateLimit-Match"
---ËÙÂÊÏŞÖÆÊıÁ¿
+--é€Ÿç‡é™åˆ¶æ•°é‡
 local RATELIMIT_LIMIT = "X-RateLimit-Limit"
---ËÙÂÊÏŞÖÆÊ£ÓàÊıÁ¿
+--é€Ÿç‡é™åˆ¶å‰©ä½™æ•°é‡
 local RATELIMIT_REMAINING = "X-RateLimit-Remaining"
---ËÙÂÊÏŞÖÆ³¬³öµÄÌáÊ¾
+--é€Ÿç‡é™åˆ¶è¶…å‡ºçš„æç¤º
 local RATELIMIT_EXCEEDED = "Rate limit exceeded"
---ÏŞÖÆµÄ·½·¨ÇëÇó
+--é™åˆ¶çš„æ–¹æ³•è¯·æ±‚
 local METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH"}
---Êı¾İÊÇ·ñÒÑ¾­³õÊ¹»¯
+--æ•°æ®æ˜¯å¦å·²ç»åˆä½¿åŒ–
 local _inited = false
---µ±Ç°Êı¾İ°æ±¾
+--å½“å‰æ•°æ®ç‰ˆæœ¬
 local _data_version = 0
---ÆóÒµÇëÇóÂ·¾¶Ã¿ÃëËÙÂÊÏŞÖÆ´ÎÊı
+--ä¼ä¸šè¯·æ±‚è·¯å¾„æ¯ç§’é€Ÿç‡é™åˆ¶æ¬¡æ•°
 local _enterprise_paths_limiting_seconds_count = 0
---ÆóÒµÇëÇóÂ·¾¶Ã¿ÃëËÙÂÊÏŞÖÆ´Êµä
+--ä¼ä¸šè¯·æ±‚è·¯å¾„æ¯ç§’é€Ÿç‡é™åˆ¶è¯å…¸
 local _enterprise_paths_limiting_seconds_sorted = {}
 
 local plugin = BasePlugin:extend()
@@ -39,7 +39,7 @@ Max memory limit: 10 MiBs
 2^20=1048576 bytes=1M
 LRU size must be: (10 * 2^20) / 1024 = 10240
 ]]
---ÉèÖÃlrucache»º´æ´óĞ¡
+--è®¾ç½®lrucacheç¼“å­˜å¤§å°
 local MATCH_SIZE = 102400
 
 plugin.PRIORITY = 901
@@ -47,29 +47,41 @@ plugin.VERSION = "0.1.0"
 
 function plugin:new()
     plugin.super.new(self, "rate-limiting-plus")
-    --³õÊ¹»¯lrucache»º´æ
+    --åˆä½¿åŒ–lrucacheç¼“å­˜
     cache = lrucache.new(MATCH_SIZE)
 end
---ÒÔ¡°:¡±ºÅ£¬½«Êı¾İ½øĞĞ²ğ·Ö£¬·µ»Økey/value
-local function iter(config_array, match_string)
-    --Í¬ÉÏ
-    ¡­¡­
+--ä»¥â€œ:â€å·ï¼Œå°†æ•°æ®è¿›è¡Œæ‹†åˆ†ï¼Œè¿”å›key/value
+local function iter(config_array)
+    return function(config_array, i, previous_name, previous_value)
+        i = i + 1
+        local current_pair = config_array[i]
+        if current_pair == nil then
+            return nil
+        end
+        
+        local current_name, current_value = current_pair:match("^([^:]+):*(.-)$")
+        if current_value == "" then
+            current_value = nil
+        end
+        
+        return i, current_name, current_value
+    end, config_array, 0
 end
---Ğ´Èëdebugµ÷ÊÔĞÅÏ¢ÈÕÖ¾µ½responseÍ·
+--å†™å…¥debugè°ƒè¯•ä¿¡æ¯æ—¥å¿—åˆ°responseå¤´
 local function output_debug(message, conf)
     if conf.debug_mode == true and message then
         kong.response.set_header(RATELIMIT_DEBUG, message)
     end
 end
---ÏŞÖÆËÙÂÊÊı¾İ·¢Éú±ä»¯£¬ÖØĞÂ½âÎö
+--é™åˆ¶é€Ÿç‡æ•°æ®å‘ç”Ÿå˜åŒ–ï¼Œé‡æ–°è§£æ
 local function re_parse(limit_data)
-    --ÇëÇó·½·¨Îª*ÉèÖÃ»º´æËÙÂÊÖµ
+    --è¯·æ±‚æ–¹æ³•ä¸º*è®¾ç½®ç¼“å­˜é€Ÿç‡å€¼
     if limit_data.key == "*" then
         _enterprise_paths_limiting_seconds_sorted[_enterprise_paths_limiting_seconds_count + 1] = limit_data
         return
     end
     
-    --ÇëÇó·½·¨ÉèÖÃ»º´æËÙÂÊÖµ
+    --è¯·æ±‚æ–¹æ³•è®¾ç½®ç¼“å­˜é€Ÿç‡å€¼
     for i, v in ipairs(METHODS) do
         limit_data.method = lower(v)
         _enterprise_paths_limiting_seconds_sorted[_enterprise_paths_limiting_seconds_count + 1] = limit_data
@@ -77,7 +89,7 @@ local function re_parse(limit_data)
     
 end
 
---Îª±¾µØ»º´æ£¬³õÊ¹»¯ĞèÒª½âÎöµÄÊı¾İ
+--ä¸ºæœ¬åœ°ç¼“å­˜ï¼Œåˆä½¿åŒ–éœ€è¦è§£æçš„æ•°æ®
 local function init_parse_data(conf)
     
     local counting = 1
@@ -100,11 +112,11 @@ local function init_parse_data(conf)
     _inited = true
 end
 
---ÕÒµ½ĞèÒª¼ÆÊıµÄidentifier
+--æ‰¾åˆ°éœ€è¦è®¡æ•°çš„identifier
 local function find_identifier(enterprise_id, host, path, method, client_ip, conf)
     
     local cache_key = fmt("%s:%s:%s:%s:%s", enterprise_id, host, path, method, client_ip)
-    --Ê×ÏÈ´Ó»º´æÖĞ²éÕÒ£¬Èç¹û²éÕÒµ½Á¢¼´·µ»Ø
+    --é¦–å…ˆä»ç¼“å­˜ä¸­æŸ¥æ‰¾ï¼Œå¦‚æœæŸ¥æ‰¾åˆ°ç«‹å³è¿”å›
     do
         local match_identifier = cache:get(cache_key)
         if match_identifier then
@@ -113,7 +125,7 @@ local function find_identifier(enterprise_id, host, path, method, client_ip, con
         end
     end
     
-    --´ÓĞèÒªÏŞÁ÷µÄËùÓĞÂ·¾¶ÖĞ²éÕÒÊÇ·ñÆ¥Åä
+    --ä»éœ€è¦é™æµçš„æ‰€æœ‰è·¯å¾„ä¸­æŸ¥æ‰¾æ˜¯å¦åŒ¹é…
     local key = enterprise_id .. "|" .. method .. "|" .. path
     for _, limiting in pairs(_enterprise_paths_limiting_seconds_sorted) do
         local from, to = string.find(key, limiting.key, nil, true)
@@ -131,7 +143,7 @@ local function find_identifier(enterprise_id, host, path, method, client_ip, con
     end
 end
 
---È¡µÃidentifiersµÄÏŞÖÆËÙÂÊµÄ»ù´¡Êı¾İ
+--å–å¾—identifiersçš„é™åˆ¶é€Ÿç‡çš„åŸºç¡€æ•°æ®
 local function get_identifiers_limits(enterprise_id, conf)
     
     local identifiers = {}
@@ -139,9 +151,9 @@ local function get_identifiers_limits(enterprise_id, conf)
     local method = lower(kong.request.get_method())
     local host = lower(kong.request.get_host())
     local path = lower(kong.request.get_path())
-    --ÑÏ¸ñÆ¥Åä
+    --ä¸¥æ ¼åŒ¹é…
     identifiers[1] = find_identifier_strict(enterprise_id, path, method, client_ip)
-    --·Ö¼¶Æ¥Åä
+    --åˆ†çº§åŒ¹é…
     identifiers[2] =
     {name = string.format("%s_%s_%s_%s_%s", enterprise_id, host, path, method, client_ip), limit = conf.level_2_limiting_second, id = 2}
     identifiers[3] = {name =
@@ -153,7 +165,7 @@ local function get_identifiers_limits(enterprise_id, conf)
     
 end
 
---È¡µÃµ±Ç°ÏŞÖÆµÄÃ¿ÃëÊ¹ÓÃÁ¿
+--å–å¾—å½“å‰é™åˆ¶çš„æ¯ç§’ä½¿ç”¨é‡
 local function get_usage(conf, identifiers, current_timestamp)
     
     local name = "second"
@@ -189,7 +201,7 @@ end
 
 function plugin:access(conf)
     plugin.super.access(self)
-    --Ê×´Î³õÊ¹»¯»º´æÊı¾İ»ò°æ±¾·¢Éú±ä»¯ÖØĞÂ³õÊ¹»¯»º´æÊı¾İ
+    --é¦–æ¬¡åˆä½¿åŒ–ç¼“å­˜æ•°æ®æˆ–ç‰ˆæœ¬å‘ç”Ÿå˜åŒ–é‡æ–°åˆä½¿åŒ–ç¼“å­˜æ•°æ®
     if not _inited or conf.version > _data_version then
         init_parse_data(conf)
     end
@@ -197,18 +209,18 @@ function plugin:access(conf)
     local policy = conf.policy
     local fault_tolerant = conf.fault_tolerant
     local current_timestamp = timestamp.get_utc()
-    --´ÓÇëÇóheaderÖĞ¶ÁÈ¡ÆóÒµID
+    --ä»è¯·æ±‚headerä¸­è¯»å–ä¼ä¸šID
     local enterprise_id = kong.request.get_header(conf.header_name)
-    --Èç¹ûÎ´¶ÁÈ¡µ½ÆóÒµID
+    --å¦‚æœæœªè¯»å–åˆ°ä¼ä¸šID
     if enterprise_id == nil then
         return kong.response.exit(400, "enterprise id is empty")
-        --Èç¹û¶ÁÈ¡µÄÆóÒµID²»ÊÇ5Î»»ò²»ÊÇÊıÖµÀàĞÍ
+        --å¦‚æœè¯»å–çš„ä¼ä¸šIDä¸æ˜¯5ä½æˆ–ä¸æ˜¯æ•°å€¼ç±»å‹
     elseif #enterprise_id ~= 5 or tonumber(enterprise_id) == nil then
         return kong.response.exit(400, "enterprise id error")
     end
-    --È¡µÃidentifiersµÄÏŞÖÆËÙÂÊµÄ»ù´¡Êı¾İ
+    --å–å¾—identifiersçš„é™åˆ¶é€Ÿç‡çš„åŸºç¡€æ•°æ®
     local identifiers = get_identifiers_limits(enterprise_id, conf)
-    --È¡µÃµ±Ç°Ê¹ÓÃÁ¿
+    --å–å¾—å½“å‰ä½¿ç”¨é‡
     local usage, stop, err = get_usage(conf, identifiers, current_timestamp)
     if err then
         if fault_tolerant then
@@ -221,19 +233,19 @@ function plugin:access(conf)
     if usage then
         if not conf.hide_client_headers then
             for k, v in pairs(usage) do
-                --ÉèÖÃ¿Í»§¶Ë·µ»ØµÄheaderĞÅÏ¢
+                --è®¾ç½®å®¢æˆ·ç«¯è¿”å›çš„headerä¿¡æ¯
                 ngx.header[RATELIMIT_ID .. "-" .. k] = v.id
                 ngx.header[RATELIMIT_LIMIT .. "-" .. k] = v.limit
                 ngx.header[RATELIMIT_REMAINING .. "-" .. k] = math.max(0, (stop == nil or stop == k) and v.remaining - 1 or v.remaining)
             end
         end
-        --Èç¹û´ïµ½ËÙÂÊËùÏŞÖÆµÄÊ¹ÓÃÁ¿£¬·µ»Ø³¬³öÏŞÖÆĞÅÏ¢
+        --å¦‚æœè¾¾åˆ°é€Ÿç‡æ‰€é™åˆ¶çš„ä½¿ç”¨é‡ï¼Œè¿”å›è¶…å‡ºé™åˆ¶ä¿¡æ¯
         if stop then
             kong.log.warn(RATELIMIT_EXCEEDED, kong.request.get_host(), kong.request.get_path())
             return kong.response.exit(429, RATELIMIT_EXCEEDED)
         end
     end
-    --Î´³¬³öÊ¹ÓÃÁ¿£¬Ôö¼ÓÇëÇóÍ³¼ÆĞÅÏ¢
+    --æœªè¶…å‡ºä½¿ç”¨é‡ï¼Œå¢åŠ è¯·æ±‚ç»Ÿè®¡ä¿¡æ¯
     for _, identifier in pairs(identifiers) do
         policies[policy].increment(conf, {second = identifier.limit}, identifier.name, current_timestamp, 1)
     end
