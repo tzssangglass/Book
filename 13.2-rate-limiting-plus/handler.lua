@@ -32,13 +32,12 @@ local plugin = BasePlugin:extend()
 plugin.PRIORITY = 901
 plugin.VERSION = "0.1.0"
 
-
 function plugin:new()
     plugin.super.new(self, "rate-limiting-plus")
 end
 
 --以“:”号，将数据进行拆分，返回key/value
-local function iter(config_array,match_string)
+local function iter(config_array, match_string)
     return function(config_array, i, previous_name, previous_value)
         i = i + 1
         local current_pair = config_array[i]
@@ -55,36 +54,33 @@ local function iter(config_array,match_string)
     end, config_array, 0
 end
 
-
-
 --为本地缓存，初使化需要解析的数据
 local function init_parse_data(conf)
-
-    for index, key, value in iter(conf.level_1_limiting_second,"^([^:]+):*(.-)$") do
-        for index1, key1, value1 in iter({key},"^([^|]+)|*(.-)$") do
-            for index2, key2, value2 in iter({value1},"^([^|]+)|*(.-)$") do
-               
+    
+    for index, key, value in iter(conf.level_1_limiting_second, "^([^:]+):*(.-)$") do
+        for index1, key1, value1 in iter({key}, "^([^|]+)|*(.-)$") do
+            for index2, key2, value2 in iter({value1}, "^([^|]+)|*(.-)$") do
+                
                 local k = lower(key)
                 local v = {
-                    key = k, 
-                    enterprise = key1, 
-                    method = lower(key2), 
-                    path = lower(value2), 
-                    limit = tonumber(value)
-                }
+                    key = k,
+                    enterprise = key1,
+                    method = lower(key2),
+                    path = lower(value2),
+                limit = tonumber(value)}
                 _enterprise_paths_limiting_seconds_dict[k] = v
             end
         end
     end
-
+    
     data_version = conf.version;
     inited = true
 end
 
 --找到需要计数的identifier
-local function find_identifier(enterprise_id, path, method, client_ip)
+local function find_identifier(enterprise_id, host, path, method, client_ip)
     local key = lower(enterprise_id .. "|" .. method .. "|" .. path)
-
+    
     local enterprise_path_limiting_second = _enterprise_paths_limiting_seconds_dict[key]
     if enterprise_path_limiting_second ~= nil then
         return {
@@ -93,9 +89,9 @@ local function find_identifier(enterprise_id, path, method, client_ip)
                 enterprise_path_limiting_second.path,
                 enterprise_path_limiting_second.method,
                 host,
-                client_ip, 
-                "strict"),
-            limit = enterprise_path_limiting_second.limit, id = 1}
+                client_ip,
+            "strict"),
+        limit = enterprise_path_limiting_second.limit, id = 1}
     end
     return nil
 end
@@ -109,9 +105,9 @@ local function get_identifiers_limits(enterprise_id, conf)
     local host = lower(kong.request.get_host())
     local path = lower(kong.request.get_path())
     
-    identifiers[1] = find_identifier(enterprise_id, path, method, client_ip)
+    identifiers[1] = find_identifier(enterprise_id, host, path, method, client_ip)
     identifiers[2] = {name = string.format("%s_%s_%s_%s_%s", enterprise_id, host, path, method, client_ip), limit = conf.level_2_limiting_second, id = 2}
-    identifiers[3] = {name =string.format("%s_%s_%s", enterprise_id, host, client_ip), limit = conf.level_3_limiting_second, id = 3}
+    identifiers[3] = {name = string.format("%s_%s_%s", enterprise_id, host, client_ip), limit = conf.level_3_limiting_second, id = 3}
     identifiers[4] = {name = string.format("%s_%s", host, client_ip), limit = conf.level_4_limiting_second, id = 4}
     
     return identifiers
@@ -125,6 +121,8 @@ local function get_usage(conf, identifiers, current_timestamp)
     local usage = {}
     local stop
     for _, identifier in pairs(identifiers) do
+        
+        dump(identifier)
         
         if identifier ~= nil then
             local current_usage, err = policies[conf.policy].usage(conf, identifier.name, current_timestamp, name)
