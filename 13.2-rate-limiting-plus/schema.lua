@@ -23,7 +23,6 @@ return {
         redis_timeout = {type = "number", default = 2000},
         redis_database = {type = "number", default = 0},
         hide_client_headers = {type = "boolean", default = false},
-        debug_mode = {type = "boolean", default = false}
         
     }}
     
