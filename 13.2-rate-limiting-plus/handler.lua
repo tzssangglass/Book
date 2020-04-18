@@ -112,6 +112,21 @@ local function init_parse_data(conf)
     _inited = true
 end
 
+--严格匹配
+local function find_identifier_strict(tenant_id,path,method,client_ip)
+    local key = tenant_id .. "|" .. method .. "|" .. path
+    local tenant_path_limiting_second = tenants_paths_limiting_seconds_dict[key]
+    if tenant_path_limiting_second ~= nil then
+        return {
+        name = fmt("%s_%s_%s_%s_%s_%s",
+            tenant_path_limiting_second.tenant,host,
+            tenant_path_limiting_second.path,method,
+            client_ip,"strict"), 
+        limit = tenant_path_limiting_second.limit, id = 1}
+    end
+    return nil 
+end 
+
 --找到需要计数的identifier
 local function find_identifier(enterprise_id, host, path, method, client_ip, conf)
     
