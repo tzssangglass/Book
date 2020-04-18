@@ -125,8 +125,6 @@ local function get_usage(conf, identifiers, current_timestamp)
     local usage = {}
     local stop
     for _, identifier in pairs(identifiers) do
-
-       dump(identifier)
         
         if identifier ~= nil then
             local current_usage, err = policies[conf.policy].usage(conf, identifier.name, current_timestamp, name)
