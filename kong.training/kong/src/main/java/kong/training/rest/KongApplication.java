@@ -16,7 +16,7 @@ public class KongApplication {
 		props.put("server.port", 8000);
 
 		new SpringApplicationBuilder()
-				.sources(UserController.class,HealthController.class, LBSController.class,ReturnRawController.class,LogController.class)
+				.sources(UserController.class,HealthController.class, LBSController.class,ReturnRawController.class,LogController.class,AlertingWebHookController.class)
 				.properties(props)
 				.run(args);
 	}
