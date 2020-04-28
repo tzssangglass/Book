@@ -35,8 +35,6 @@ public class UDPReceiveConfig {
         return message.contains("kong");
     }
 
-
-
     @Router(inputChannel="udpFilter")
     public String routing(String message) {
         //当接收数据包含kong时

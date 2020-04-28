@@ -3,7 +3,7 @@ package kong.training.rest.model;
 public class LBS {
 
     //ip地址
-    public String ip;
+    private String ip;
 
     //中文地址位置
     private String location;

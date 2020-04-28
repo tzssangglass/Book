@@ -12,7 +12,7 @@ import java.net.InetAddress;
 public class HealthController {
 
     //******
-    //http://localhost:8080/health/node
+    //http://localhost:8000/health/node
     //获取当前服务器节点IP
     @RequestMapping(value = "node", produces = { "application/json" })
     public String getNode() {
@@ -27,7 +27,7 @@ public class HealthController {
     }
 
     //******
-    //http://localhost:8080/health/ping
+    //http://localhost:8000/health/ping
     //健康检查
     @RequestMapping(value = "ping", produces = { "application/json" })
     public Boolean Ping() {

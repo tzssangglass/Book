@@ -16,7 +16,7 @@ import java.util.List;
 public class UserController {
 
 	//******
-	//http://localhost:8080/user/version
+	//http://localhost:8000/user/version
 	//获取用户API服务版本
 	@RequestMapping(value = "version", produces = { "application/json" })
 	public String getVersion() {
@@ -26,7 +26,7 @@ public class UserController {
 
 
 	 //******
-	//http://localhost:8080/user?companyId=110100&userId=11111112
+	//http://localhost:8000/user?companyId=110100&userId=11111112
 	//根据用户ID/企业ID取得用户信息
 	@RequestMapping(value = "", produces = { "application/json" })
 	public User getUser(@RequestParam(value = "companyId", required = true) int companyId,
@@ -44,7 +44,7 @@ public class UserController {
 	}
 
 	// ****
-	// http://localhost:8080/user/all/100010
+	// http://localhost:8000/user/all/100010
 	//根据企业ID取得所有用户信息
 	@RequestMapping(value = "all/{companyId}", method = RequestMethod.GET)
 	public List<User> getAllUser(@PathVariable("companyId") int companyId) {
@@ -69,7 +69,7 @@ public class UserController {
 
 	// ****
 	//post man ->body raw json ->json value
-	// http://localhost:8080/user?companyId=100010
+	// http://localhost:8000/user?companyId=100010
 	//  {"name":"tom","age":25}
 	//添加用户
 	@RequestMapping(value = "", method = RequestMethod.POST, headers = "Accept=application/json", produces = {
@@ -80,7 +80,7 @@ public class UserController {
 	}
 
 	// *****
-	// http://localhost:8080/user?companyId=100010&name=taotao
+	// http://localhost:8000/user?companyId=100010&name=taotao
 	//@ResponseBody
 	//更新用户
 	@RequestMapping(value = "", method = RequestMethod.PUT, produces = { "application/json" })
@@ -91,7 +91,7 @@ public class UserController {
 	}
 
 	//******
-	// http://localhost:8080/user?companyId=100010&name=111113
+	// http://localhost:8000/user?companyId=100010&name=111113
 	//删除用户
 	@RequestMapping(value = "", method = RequestMethod.DELETE, produces = {
 			"application/json" })
