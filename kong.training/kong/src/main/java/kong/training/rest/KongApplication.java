@@ -2,30 +2,17 @@ package kong.training.rest;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ConfigurableApplicationContext;
-
-import java.util.HashMap;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication
+@EnableDiscoveryClient
 public class KongApplication {
 
 	public static void main(String[] args) {
-
-		HashMap<String, Object> props = new HashMap<>();
-		props.put("server.port", 8000);
-
-		new SpringApplicationBuilder()
-				.sources(UserController.class,
-						HealthController.class,
-						LBSController.class,
-						ReturnRawController.class,
-						LogController.class,
-						AlertingWebHookController.class,
-						RateLimitController.class
-				)
-				.properties(props)
-				.run(args);
+        //mvn package
+		//mvn clean package  -Dmaven.test.skip=true
+		//java -jar
+		SpringApplication.run(KongApplication.class, args);
 	}
 
     /*
