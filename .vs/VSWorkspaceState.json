@@ -1,0 +1,15 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\kong.training",
+    "\\kong.training\\kong",
+    "\\kong.training\\kong\\lib",
+    "\\kong.training\\kong\\src",
+    "\\kong.training\\kong\\src\\main",
+    "\\kong.training\\kong\\src\\main\\java",
+    "\\kong.training\\kong\\src\\main\\java\\kong",
+    "\\kong.training\\kong\\src\\main\\java\\kong\\training",
+    "\\kong.training\\kong\\src\\main\\java\\kong\\training\\rest"
+  ],
+  "PreviewInSolutionExplorer": false
+}
