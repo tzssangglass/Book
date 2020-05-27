@@ -1,9 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\config",
+    "\\12.8-kong-waf",
+    "\\kong.training",
     "\\kong.training\\kong",
-    "\\kong.training\\kong\\lib",
     "\\kong.training\\kong\\src",
     "\\kong.training\\kong\\src\\main",
     "\\kong.training\\kong\\src\\main\\java",
@@ -11,6 +11,5 @@
     "\\kong.training\\kong\\src\\main\\java\\kong\\training",
     "\\kong.training\\kong\\src\\main\\java\\kong\\training\\rest"
   ],
-  "SelectedNode": "\\config\\prometheus.yml",
   "PreviewInSolutionExplorer": false
 }
