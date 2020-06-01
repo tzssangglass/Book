@@ -1,7 +1,7 @@
 return {
     no_consumer = true,
     fields = {
-        static_file_host = {required = true, type = "string", default = "www.file.com"},
+        static_file_host = {required = true, type = "string", default = "www.static-file-server.com"},
         static_file_port = {required = true, type = "number", default = 80},
         concat_delimiter = {required = true, type = "string", default = ""},
         concat_max_files_number = {required = true, type = "number", default = 10},

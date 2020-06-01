@@ -47,12 +47,23 @@ local function generate_content(file_parts, conf)
         return nil, "File size exceeded limit:" .. conf.concat_max_files_size, 10
     end
     
+	 if pl_stringx.endswith(file_parts[1], 'js') then
+        kong.response.set_header("content-type", "text/javascript")
+    else
+        kong.response.set_header("content-type", "text/css")
+    end
+
     return content, nil, conf.key_ttl
+end
+
+local function url_decode(str)
+  str = string.gsub(str, '%%(%x%x)', function(h) return string.char(tonumber(h, 16)) end)
+  return str
 end
 
 function plugin:access(conf)
     plugin.super.access(self)
-    local query = kong.request.get_raw_query()
+    local query = url_decode(kong.request.get_raw_query())
     local is_double_question = pl_stringx.startswith(query, '?')
     
     if not is_double_question then
