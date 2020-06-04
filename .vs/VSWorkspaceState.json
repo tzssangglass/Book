@@ -1,8 +1,8 @@
 {
   "ExpandedNodes": [
     "",
+    "\\12.7-static-file-concat",
     "\\12.8-kong-waf",
-    "\\kong.training",
     "\\kong.training\\kong",
     "\\kong.training\\kong\\src",
     "\\kong.training\\kong\\src\\main",
